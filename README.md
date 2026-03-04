@@ -167,7 +167,7 @@ This project integrates Artificial Intelligence, Data Science, and Full-Stack En
 
 ```bash
 # Clone repository
-git clone https://github.com/Tasnim85/Esprit-PIDS-4DS9-2526-ATHENAPULSE.git
+git clone https://github.com/Tasnim85/Esprit-PI-4DS9-2526-ATHENAPULSE.git
 
 # Navigate to project
 cd athenapulse
