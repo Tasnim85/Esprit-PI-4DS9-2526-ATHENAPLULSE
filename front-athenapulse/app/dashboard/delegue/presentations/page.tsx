@@ -158,7 +158,7 @@ export default function PresentationsPage() {
       }
 
       const slides = data.presentation_slides || {}
-      const slidesArray = Object.entries(slides)
+      const slidesArray = Object.entries(slides) as [string, string][]
       setAllSlides(slidesArray)
       setCurrentSlideIndex(0)
 
