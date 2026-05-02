@@ -129,290 +129,165 @@ export default function PresentationsPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null)
   const [activeTab, setActiveTab] = useState<'preview'>('preview')
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
+  const [allSlides, setAllSlides] = useState<Array<[string, string]>>([])
 
-  // Mock API call to generate presentation/rapport
+  // Appel au backend FastAPI
   const generateContent = async (product: string, indicationText: string, type: GenerationType): Promise<GeneratedContent> => {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      const response = await fetch('http://localhost:8000/compliance/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          produit: product,
+          indication: indicationText || undefined,
+        }),
+      })
 
-    const productData: Record<string, ProductData> = {
-      'cardio-x': {
-        name: 'Cardio-X',
-        fullName: 'Cardio-X 50mg/100mg',
-        class: 'Antihypertenseur - Inhibiteur de l\'enzyme de conversion',
-        indications: ['Hypertension artérielle sévère', 'Prévention des AVC', 'Insuffisance cardiaque chronique', 'Néphropathie diabétique'],
-        dosage: '1 comprimé par jour, matin ou soir',
-        mechanism: 'Inhibiteur de l\'ECA avec action prolongée 24h. Diminue la pression artérielle en relaxant les vaisseaux sanguins.',
-        efficacy: 'Réduction moyenne de 25-30 mmHg (systolique) et 15-20 mmHg (diastolique)',
-        sideEffects: ['Vertiges légers (5%)', 'Fatigue (3%)', 'Toux sèche (1%)', 'Hyperkaliémie rare'],
-        contraindications: ['Grossesse', 'Sténose bilatérale des artères rénales', 'Antécédent d\'œdème de Quincke'],
-        studies: 'Étude HOPE-2024 : réduction de 32% des événements cardiovasculaires majeurs sur 12 mois',
-        price: '385 DH / boîte de 30 comprimés',
-        presentation: 'Boîte de 30 comprimés sous blister',
-      },
-      'neuro-b': {
-        name: 'Neuro-B Plus',
-        fullName: 'Neuro-B Plus Gélules',
-        class: 'Complément alimentaire neurologique',
-        indications: ['Neuropathies périphériques', 'Fatigue chronique', 'Troubles de la mémoire légers', 'Prévention cognitive'],
-        dosage: '1 à 2 gélules par jour pendant les repas',
-        mechanism: 'Association synergique de vitamines B12, B6, acide folique et alpha-lipoïque pour le soutien nerveux.',
-        efficacy: 'Amélioration de 65% des symptômes neuropathiques après 8 semaines',
-        sideEffects: ['Nausées légères (2%)', 'Urine colorée (sans danger)', 'Réactions allergiques rares'],
-        contraindications: ['Hypersensibilité à l\'un des composants'],
-        studies: 'Étude VITA-Neuro (2025) : réduction de 47% de la fatigue chez 82% des patients',
-        price: '225 DH / flacon de 60 gélules',
-        presentation: 'Flacon de 60 gélules',
-      },
-      'fibromed': {
-        name: 'Fibromed',
-        fullName: 'Fibromed 75mg',
-        class: 'Antidouleur - Modulateur des neurotransmetteurs',
-        indications: ['Fibromyalgie', 'Douleurs chroniques diffuses', 'Troubles du sommeil associés'],
-        dosage: '1 comprimé matin et soir. Augmentation progressive sur 2 semaines',
-        mechanism: 'Module la transmission de la douleur au niveau du SNC. Augmente les niveaux de sérotonine et noradrénaline.',
-        efficacy: 'Réduction de 55% des scores de douleur après 12 semaines',
-        sideEffects: ['Nausées (8%)', 'Sécheresse buccale (6%)', 'Somnolence (10%)', 'Prise de poids modérée'],
-        contraindications: ['Allergie connue', 'Insuffisance hépatique sévère'],
-        studies: 'Étude FIBRO-2024 : amélioration de la qualité de vie chez 78% des patients',
-        price: '420 DH / boîte de 28 comprimés',
-        presentation: 'Boîte de 28 comprimés sous blister',
-      },
-    }
-
-    const lowerProduct = product.toLowerCase()
-    let data: ProductData = productData['cardio-x']
-    if (lowerProduct.includes('neuro')) data = productData['neuro-b']
-    else if (lowerProduct.includes('fibro')) data = productData['fibromed']
-
-    if (type === 'presentation') {
-      const slides: Slide[] = [
-        {
-          title: 'Introduction',
-          content: `# ${data.fullName}\n\n## Une innovation thérapeutique pour ${indicationText || data.indications[0]}\n\n**Classe thérapeutique :** ${data.class}\n\n**Présentation :** ${data.presentation}`,
-        },
-        {
-          title: 'Mécanisme d\'action',
-          content: `## Mécanisme d'action\n\n${data.mechanism}\n\n### Points clés :\n- Action prolongée 24h\n- Biodisponibilité optimale\n- Métabolisation hépatique sécurisée`,
-        },
-        {
-          title: 'Indications et Efficacité',
-          content: `## Indications thérapeutiques\n\n${data.indications.map((i: string) => `- ${i}`).join('\n')}\n\n### Efficacité clinique\n\n${data.efficacy}\n\n${data.studies}`,
-        },
-        {
-          title: 'Posologie et Administration',
-          content: `## Posologie recommandée\n\n${data.dosage}\n\n### Points d'attention :\n- À prendre à heure fixe\n- Avec ou sans nourriture\n- Ne pas dépasser la dose prescrite\n- Suivi régulier recommandé`,
-        },
-        {
-          title: 'Sécurité et Tolérance',
-          content: `## Profil de sécurité\n\n**Effets indésirables fréquents :**\n${data.sideEffects.map((e: string) => `- ${e}`).join('\n')}\n\n**Contre-indications :**\n${data.contraindications.map((c: string) => `- ${c}`).join('\n')}`,
-        },
-        {
-          title: 'Conclusion',
-          content: `## Conclusion\n\n${data.fullName} représente une avancée significative dans la prise en charge de ${indicationText || data.indications[0]}.\n\n### Pour en savoir plus :\n- Documentation scientifique disponible\n- Visite médicale sur demande\n- Échantillons gratuits disponibles`,
-        },
-      ]
-      
-      return {
-        type: 'presentation',
-        title: `Présentation - ${data.fullName}`,
-        productName: data.name,
-        indication: indicationText || undefined,
-        generatedAt: new Date(),
-        slides: slides,
+      if (!response.ok) {
+        console.error(`API Error: ${response.status}`)
+        throw new Error('Erreur lors de la récupération des données')
       }
-    } else {
-      const sections: Section[] = [
-        {
-          title: 'Résumé Exécutif',
-          content: `${data.fullName} est indiqué dans ${indicationText || data.indications[0]}. Les données cliniques démontrent une efficacité supérieure avec un excellent profil de sécurité.`,
-        },
-        {
-          title: 'Profil du Produit',
-          content: `**Dénomination :** ${data.fullName}\n**Classe :** ${data.class}\n**Présentation :** ${data.presentation}\n**Prix :** ${data.price}`,
-        },
-        {
-          title: 'Efficacité Clinique',
-          content: `${data.efficacy}\n\n${data.studies}`,
-        },
-        {
-          title: 'Recommandations d\'Utilisation',
-          content: `${data.dosage}\n\nPopulation cible : ${data.indications.join(', ')}`,
-        },
-        {
-          title: 'Analyse SWOT',
-          content: `**Forces :**\n- Efficacité démontrée\n- Bon profil de sécurité\n- Administration simplifiée\n\n**Opportunités :**\n- Marché en croissance\n- Besoin non satisfait\n\n**Menaces :**\n- Concurrence générique\n- Pression sur les prix`,
-        },
-        {
-          title: 'Conclusion',
-          content: `${data.fullName} est une option thérapeutique de premier choix dans ${indicationText || data.indications[0]}. Une adoption rapide est recommandée.`,
-        },
-      ]
-      
-      return {
-        type: 'rapport',
-        title: `Rapport Médical - ${data.fullName}`,
-        productName: data.name,
-        indication: indicationText || undefined,
-        generatedAt: new Date(),
-        sections: sections,
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error('Génération échouée')
       }
+
+      const slides = data.presentation_slides || {}
+      const slidesArray = Object.entries(slides)
+      setAllSlides(slidesArray)
+      setCurrentSlideIndex(0)
+
+      if (type === 'presentation') {
+        const slideObjects: Slide[] = slidesArray.map(([key, content]) => ({
+          title: key.replace(/^slide\d+_/i, '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          content: content as string,
+        }))
+
+        return {
+          type: 'presentation',
+          title: `Présentation - ${product}`,
+          productName: product,
+          indication: indicationText || undefined,
+          generatedAt: new Date(),
+          slides: slideObjects,
+        }
+      } else {
+        const sections: Section[] = [
+          {
+            title: 'Résumé Exécutif',
+            content: data.presentation_slides?.slide2_introduction || 'Description du produit',
+          },
+          {
+            title: 'Indications',
+            content: data.presentation_slides?.slide3_key_benefit || 'Indications du produit',
+          },
+          {
+            title: 'Mode d\'action',
+            content: data.presentation_slides?.slide4_how_it_works || 'Mécanisme d\'action',
+          },
+          {
+            title: 'Posologie',
+            content: data.presentation_slides?.slide5_usage || 'Instructions d\'utilisation',
+          },
+          {
+            title: 'Sécurité',
+            content: data.presentation_slides?.slide6_safety || 'Profil de sécurité',
+          },
+        ]
+
+        return {
+          type: 'rapport',
+          title: `Rapport Médical - ${product}`,
+          productName: product,
+          indication: indicationText || undefined,
+          generatedAt: new Date(),
+          sections: sections,
+        }
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
+      throw error
     }
   }
 
-  // Générer et télécharger un fichier PPTX
-  const generatePPTX = async () => {
-    if (!generatedContent || generatedContent.type !== 'presentation' || !generatedContent.slides) return
+  const downloadPPTX = async () => {
+    if (!generatedContent || generatedContent.type !== 'presentation') return
 
-    const PptxGenJS = (await import('pptxgenjs')).default
-    const pptx = new PptxGenJS()
-
-    pptx.defineLayout({ name: 'WIDE', width: 10, height: 5.625 })
-    pptx.layout = 'WIDE'
-
-    const slide1 = pptx.addSlide()
-    slide1.addText(generatedContent.title, {
-      x: 0.5, y: 1.5, w: 9, h: 1.5,
-      fontSize: 32, bold: true, color: '0A6EBD',
-      align: 'center',
-    })
-    slide1.addText(`Produit: ${generatedContent.productName}`, {
-      x: 0.5, y: 3.2, w: 9, h: 0.5,
-      fontSize: 16, align: 'center',
-    })
-    if (generatedContent.indication) {
-      slide1.addText(`Indication: ${generatedContent.indication}`, {
-        x: 0.5, y: 3.8, w: 9, h: 0.5,
-        fontSize: 14, align: 'center', italic: true,
+    try {
+      const response = await fetch('http://localhost:8000/compliance/pptx', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          produit: generatedContent.productName,
+          indication: generatedContent.indication || undefined,
+        }),
       })
+
+      if (!response.ok) {
+        console.error(`PPTX download failed: ${response.status}`)
+        return
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${generatedContent.productName.replace(/\s+/g, '_')}_presentation.pptx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('PPTX download failed:', error)
     }
-    slide1.addText(`Généré le ${generatedContent.generatedAt.toLocaleDateString('fr-FR')}`, {
-      x: 0.5, y: 4.8, w: 9, h: 0.4,
-      fontSize: 11, align: 'center', color: '666666',
-    })
-
-    generatedContent.slides.forEach((slide, idx) => {
-      const slideContent = pptx.addSlide()
-      slideContent.addText(slide.title, {
-        x: 0.5, y: 0.3, w: 9, h: 0.6,
-        fontSize: 24, bold: true, color: '0A6EBD',
-      })
-      
-      const lines = slide.content.split('\n')
-      let yPos = 1.1
-      
-      lines.forEach((line) => {
-        if (line.startsWith('# ')) {
-          slideContent.addText(line.substring(2), { x: 0.5, y: yPos, w: 9, h: 0.5, fontSize: 20, bold: true })
-          yPos += 0.6
-        } else if (line.startsWith('## ')) {
-          slideContent.addText(line.substring(3), { x: 0.5, y: yPos, w: 9, h: 0.4, fontSize: 18, bold: true, color: '05B8CC' })
-          yPos += 0.5
-        } else if (line.startsWith('- ')) {
-          slideContent.addText(line.substring(2), { x: 0.8, y: yPos, w: 8.7, h: 0.35, fontSize: 12, bullet: true })
-          yPos += 0.4
-        } else if (line.trim() && !line.startsWith('**')) {
-          slideContent.addText(line, { x: 0.5, y: yPos, w: 9, h: 0.35, fontSize: 13 })
-          yPos += 0.45
-        }
-      })
-    })
-
-    const lastSlide = pptx.addSlide()
-    lastSlide.addText('Merci pour votre attention', { x: 0.5, y: 2, w: 9, h: 1, fontSize: 28, bold: true, align: 'center' })
-    lastSlide.addText('Des questions ? Notre équipe est à votre disposition', { x: 0.5, y: 3.2, w: 9, h: 0.5, fontSize: 14, align: 'center', italic: true })
-
-    await pptx.writeFile({ fileName: `${generatedContent.productName}_presentation.pptx` })
   }
 
-  // Générer et télécharger un fichier PDF
-  const generatePDF = async () => {
-    if (!generatedContent || generatedContent.type !== 'rapport' || !generatedContent.sections) return
+  const downloadReport = async () => {
+    if (!generatedContent || generatedContent.type !== 'rapport') return
 
-    const { jsPDF } = await import('jspdf')
-    const pdf = new jsPDF()
-    let yPos = 20
-
-    const addText = (text: string, size: number, isBold = false, isItalic = false) => {
-      const lines = pdf.splitTextToSize(text, 170)
-      if (yPos + (lines.length * (size * 0.35)) > 280) {
-        pdf.addPage()
-        yPos = 20
-      }
-      pdf.setFont('helvetica', isBold ? 'bold' : isItalic ? 'italic' : 'normal')
-      pdf.setFontSize(size)
-      pdf.text(lines, 20, yPos)
-      yPos += lines.length * (size * 0.35) + 4
-    }
-
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(24)
-    pdf.setTextColor(10, 110, 189)
-    pdf.text(generatedContent.title, 20, yPos)
-    yPos += 15
-
-    pdf.setFontSize(11)
-    pdf.setTextColor(100, 100, 100)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(`Produit: ${generatedContent.productName}`, 20, yPos)
-    yPos += 7
-    if (generatedContent.indication) {
-      pdf.text(`Indication: ${generatedContent.indication}`, 20, yPos)
-      yPos += 7
-    }
-    pdf.text(`Généré le: ${generatedContent.generatedAt.toLocaleDateString('fr-FR')}`, 20, yPos)
-    yPos += 15
-
-    pdf.setDrawColor(200, 200, 200)
-    pdf.line(20, yPos, 190, yPos)
-    yPos += 10
-
-    generatedContent.sections.forEach((section) => {
-      if (yPos > 250) {
-        pdf.addPage()
-        yPos = 20
-      }
-      
-      pdf.setFont('helvetica', 'bold')
-      pdf.setFontSize(16)
-      pdf.setTextColor(10, 110, 189)
-      pdf.text(section.title, 20, yPos)
-      yPos += 10
-      
-      pdf.setFont('helvetica', 'normal')
-      pdf.setFontSize(11)
-      pdf.setTextColor(0, 0, 0)
-      
-      const lines = section.content.split('\n')
-      lines.forEach((line) => {
-        if (line.startsWith('**')) {
-          const plainText = line.replace(/\*\*/g, '')
-          addText(plainText, 11, true)
-        } else if (line.startsWith('- ')) {
-          addText(`• ${line.substring(2)}`, 11)
-        } else if (line.trim()) {
-          addText(line, 11)
-        }
+    try {
+      const response = await fetch('http://localhost:8000/compliance/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          produit: generatedContent.productName,
+          indication: generatedContent.indication || undefined,
+        }),
       })
-      yPos += 5
-    })
 
-    pdf.addPage()
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(20)
-    pdf.setTextColor(10, 110, 189)
-    pdf.text('Rapport généré par AthenaPulse', 20, 100, { align: 'center' })
-    pdf.setFontSize(12)
-    pdf.setTextColor(100, 100, 100)
-    pdf.text('Pour toute question, contactez notre équipe médicale', 20, 120, { align: 'center' })
+      if (!response.ok) {
+        console.error(`PDF download failed: ${response.status}`)
+        return
+      }
 
-    pdf.save(`${generatedContent.productName}_rapport.pdf`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${generatedContent.productName.replace(/\s+/g, '_')}_rapport.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('PDF download failed:', error)
+    }
   }
 
   const handleDownload = () => {
     if (generationType === 'presentation') {
-      generatePPTX()
+      downloadPPTX()
     } else {
-      generatePDF()
+      downloadReport()
     }
   }
 
@@ -704,30 +579,179 @@ export default function PresentationsPage() {
                     </div>
 
                     {/* Preview content */}
-                    {generatedContent.type === 'presentation' && generatedContent.slides ? (
-                      <div>
-                        {generatedContent.slides.map((slide, idx) => (
-                          <div key={idx} style={{
-                            marginBottom: '32px',
-                            padding: '20px',
-                            background: 'var(--color-surface-1)',
-                            borderRadius: 'var(--radius-md)',
-                            borderLeft: `4px solid var(--color-brand-primary)`,
-                          }}>
-                            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 600, marginBottom: '16px', color: 'var(--color-brand-primary)' }}>
-                              Slide {idx + 1}: {slide.title}
-                            </h3>
-                            <div style={{ fontSize: '0.9rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                              {slide.content.split('\n').map((line, i) => {
-                                if (line.startsWith('# ')) return <h1 key={i} style={{ fontSize: '1.3rem', margin: '12px 0 8px' }}>{line.slice(2)}</h1>
-                                if (line.startsWith('## ')) return <h2 key={i} style={{ fontSize: '1.1rem', margin: '10px 0 6px', color: 'var(--color-brand-primary)' }}>{line.slice(3)}</h2>
-                                if (line.startsWith('- ')) return <li key={i} style={{ marginLeft: '20px' }}>{line.slice(2)}</li>
-                                if (line.startsWith('**') && line.endsWith('**')) return <strong key={i}>{line.slice(2, -2)}</strong>
-                                return line ? <p key={i} style={{ margin: '6px 0' }}>{line}</p> : <br key={i} />
-                              })}
-                            </div>
+                    {generatedContent.type === 'presentation' && allSlides.length > 0 ? (
+                      <div style={{
+                        background: '#1a1a1a',
+                        borderRadius: 'var(--radius-lg)',
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                        marginTop: '16px',
+                      }}>
+                        {/* Slide Viewer Header */}
+                        <div style={{
+                          padding: '12px 16px',
+                          background: '#0D1B2A',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: '1px solid #333',
+                        }}>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                            📊 Présentation - Page {currentSlideIndex + 1} sur {allSlides.length}
                           </div>
-                        ))}
+                          <button
+                            onClick={handleDownload}
+                            style={{
+                              padding: '6px 14px',
+                              background: 'white',
+                              color: '#0D1B2A',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.background = '#05B8CC'
+                              e.currentTarget.style.color = 'white'
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.background = 'white'
+                              e.currentTarget.style.color = '#0D1B2A'
+                            }}
+                          >
+                            📥 Télécharger
+                          </button>
+                        </div>
+
+                        {/* Slide Content */}
+                        <div style={{
+                          padding: '40px',
+                          minHeight: '400px',
+                          background: 'white',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          color: '#333',
+                        }}>
+                          {allSlides[currentSlideIndex] && (
+                            <div style={{ width: '100%', textAlign: 'center' }}>
+                              <div style={{
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold',
+                                color: '#0A6EBD',
+                                marginBottom: '16px',
+                                textTransform: 'none',
+                                letterSpacing: '1px',
+                              }}>
+                                {allSlides[currentSlideIndex][0]
+                                  .replace(/^slide\d+_/i, '')
+                                  .split('_')
+                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(' ')}
+                              </div>
+                              <div style={{
+                                fontSize: '1rem',
+                                lineHeight: 1.8,
+                                color: '#555',
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word',
+                                maxWidth: '800px',
+                                margin: '0 auto',
+                              }}>
+                                {allSlides[currentSlideIndex][1]}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Navigation Controls */}
+                        <div style={{
+                          padding: '16px',
+                          background: '#0D1B2A',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '12px',
+                          borderTop: '1px solid #333',
+                        }}>
+                          <button
+                            onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
+                            disabled={currentSlideIndex === 0}
+                            style={{
+                              padding: '8px 16px',
+                              background: currentSlideIndex === 0 ? '#555' : '#05B8CC',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                              cursor: currentSlideIndex === 0 ? 'not-allowed' : 'pointer',
+                              opacity: currentSlideIndex === 0 ? 0.5 : 1,
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            ← Précédent
+                          </button>
+
+                          <div style={{
+                            display: 'flex',
+                            gap: '8px',
+                            alignItems: 'center',
+                          }}>
+                            {Array.from({ length: allSlides.length }).map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setCurrentSlideIndex(i)}
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  padding: 0,
+                                  background: currentSlideIndex === i ? '#05B8CC' : '#444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  fontSize: '0.8rem',
+                                }}
+                                onMouseEnter={e => {
+                                  if (currentSlideIndex !== i) {
+                                    e.currentTarget.style.background = '#666'
+                                  }
+                                }}
+                                onMouseLeave={e => {
+                                  if (currentSlideIndex !== i) {
+                                    e.currentTarget.style.background = '#444'
+                                  }
+                                }}
+                              >
+                                {i + 1}
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            onClick={() => setCurrentSlideIndex(Math.min(allSlides.length - 1, currentSlideIndex + 1))}
+                            disabled={currentSlideIndex === allSlides.length - 1}
+                            style={{
+                              padding: '8px 16px',
+                              background: currentSlideIndex === allSlides.length - 1 ? '#555' : '#05B8CC',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                              cursor: currentSlideIndex === allSlides.length - 1 ? 'not-allowed' : 'pointer',
+                              opacity: currentSlideIndex === allSlides.length - 1 ? 0.5 : 1,
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            Suivant →
+                          </button>
+                        </div>
                       </div>
                     ) : generatedContent.type === 'rapport' && generatedContent.sections ? (
                       <div>
@@ -745,39 +769,39 @@ export default function PresentationsPage() {
                             </div>
                           </div>
                         ))}
+                        
+                        {/* Download button for PDF */}
+                        <div style={{
+                          marginTop: '32px',
+                          paddingTop: '24px',
+                          borderTop: '1px solid var(--color-border)',
+                          textAlign: 'center',
+                        }}>
+                          <button
+                            onClick={handleDownload}
+                            style={{
+                              padding: '12px 32px',
+                              background: 'var(--gradient-brand)',
+                              border: 'none',
+                              borderRadius: 'var(--radius-md)',
+                              color: 'white',
+                              fontFamily: 'var(--font-display)',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              transition: 'transform 0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            {Icons.download} Télécharger le rapport (PDF)
+                          </button>
+                        </div>
                       </div>
                     ) : null}
-
-                    {/* Download button */}
-                    <div style={{
-                      marginTop: '32px',
-                      paddingTop: '24px',
-                      borderTop: '1px solid var(--color-border)',
-                      textAlign: 'center',
-                    }}>
-                      <button
-                        onClick={handleDownload}
-                        style={{
-                          padding: '12px 32px',
-                          background: 'var(--gradient-brand)',
-                          border: 'none',
-                          borderRadius: 'var(--radius-md)',
-                          color: 'white',
-                          fontFamily: 'var(--font-display)',
-                          fontWeight: 600,
-                          fontSize: '0.9rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          transition: 'transform 0.2s',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                      >
-                        {Icons.download} Télécharger {generatedContent.type === 'presentation' ? 'la présentation (PPTX)' : 'le rapport (PDF)'}
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
