@@ -1,0 +1,18 @@
+# Python 3.10.x
+# Generated from working environment
+# ====================================
+
+fastapi==0.136.1
+uvicorn==0.46.0
+joblib==1.5.3
+pandas==2.3.3
+numpy==2.2.6
+scikit-learn==1.7.2
+sentence-transformers==3.4.1
+torch==2.5.1
+transformers==4.46.3
+huggingface-hub==0.36.2
+pydantic==2.13.3
+python-multipart==0.0.27
+openai-whisper==20250625
+xgboost==2.1.4
