@@ -1,1 +1,22 @@
-.env 
+# Python
+**/venv/
+**/avatar_venv/
+**/__pycache__/
+**/*.pyc
+**/sessions/
+
+# ML Models (heavy folders)
+avatar-backend/dso1/models/
+avatar-backend/dso1/whisper_model/
+avatar-backend/dso2/dso2/
+avatar-backend/dso3/venv/
+avatar-backend/dso4/dso4/
+avatar-backend/dso4/*.wav
+
+# Node
+**/node_modules/
+**/.next/
+
+# Environment files
+**/.env
+**/.env.local
